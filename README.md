@@ -107,23 +107,18 @@ runs from:
 | `token` | Access token: a permanent System User token with the `whatsapp_business_messaging` permission |
 | `phoneNumberId` | The sending number's **Phone number ID** (WhatsApp → API Setup in the Meta app dashboard) |
 | `recipient` | Recipient number, international format, digits only (e.g. `972501234567`) |
-| `template` | `bdi_update_he`, the approved template described below |
+| `template` | `worker_report_he`, the approved template described below |
 | `templateLanguage` | The template's language code (`he`) |
 
 **The template.** WhatsApp only delivers a template message outside the 24 hours after the recipient last wrote
-to the business number, and a template's text is fixed, so this project has its own. Create it in WhatsApp
-Manager → Message templates (https://business.facebook.com/wa/manage/message-templates/), on the WhatsApp
-account of the sending number:
+to the business number. This project uses WorkerDocMaker's approved template, `worker_report_he` (Hebrew,
+Document header, fixed body text without `{{1}}` variables), so both reports go out the same way. The template's
+text is the same for both; the PDF's file name tells the reports apart.
 
-| Field | Value |
-|---|---|
-| Category | Utility |
-| Name | `bdi_update_he` |
-| Language | Hebrew (`he`) |
-| Header | Media → **Document** |
-| Body | Fixed text without `{{1}}` variables, e.g. `מצורף דוח עדכון דירוגי BDI.` |
-
-Until Meta approves it, sending fails with error 132001.
+To give BDI its own text instead, create a template the same way in WhatsApp Manager → Message templates
+(https://business.facebook.com/wa/manage/message-templates/), on the sending number's WhatsApp account
+(category Utility, language Hebrew, header Media → **Document**, body without variables), and put its name in
+`template`. Until Meta approves it, sending fails with error 132001.
 
 Things to know:
 

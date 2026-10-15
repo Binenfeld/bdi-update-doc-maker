@@ -12,7 +12,7 @@ phoneNumberId=
 # Recipient in international format, digits only (e.g. 972501234567)
 recipient=
 
-# Approved template with a DOCUMENT header (bdi_update_he, see the README). Leave empty to send a plain document message,
+# Approved template with a DOCUMENT header (worker_report_he, shared with WorkerDocMaker; see the README). Leave empty to send a plain document message,
 # which only arrives if the recipient messaged the business number in the last 24 hours.
-template=bdi_update_he
+template=worker_report_he
 templateLanguage=he
