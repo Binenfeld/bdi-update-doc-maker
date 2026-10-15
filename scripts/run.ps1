@@ -1,24 +1,18 @@
 <#
 .SYNOPSIS
     Runs BDIUpdateDocMaker: reads the newest .csv in the input folder, writes the BDI report (.docx and .pdf)
-    next to it and sends the PDF on WhatsApp.
-.DESCRIPTION
-    The WhatsApp settings (whatsapp.properties) are looked up in the input folder first, then in the project
-    folder. Without them the run stops with an explanation, unless -NoWhatsApp is given.
+    next to it.
 .PARAMETER InputFolder
     Folder holding the exported BDI sheet CSVs. Default: C:\bdiupdatedocmaker
-.PARAMETER NoWhatsApp
-    Make the report and the PDF but don't send anything (for testing).
 .PARAMETER Debug
     Also print every company read, and the full stack trace of any error.
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File scripts\run.ps1
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File scripts\run.ps1 -InputFolder D:\reports -NoWhatsApp
+    powershell -ExecutionPolicy Bypass -File scripts\run.ps1 -InputFolder D:\reports
 #>
 param(
     [string]$InputFolder = 'C:\bdiupdatedocmaker',
-    [switch]$NoWhatsApp,
     [switch]$Debug
 )
 $ErrorActionPreference = 'Stop'
@@ -26,7 +20,7 @@ $ErrorActionPreference = 'Stop'
 # A relative folder means relative to where the script was started, not to the project folder used below.
 $InputFolder = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($InputFolder)
 
-# The program also looks for whatsapp.properties in the working directory, so run it from the project folder.
+# Run from the project folder, like IntelliJ does.
 $projectRoot = Split-Path $PSScriptRoot -Parent
 Set-Location $projectRoot
 
@@ -62,7 +56,6 @@ if ($env:JAVA_HOME) {
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $programArgs = @($InputFolder)
-if ($NoWhatsApp) { $programArgs += '--no-whatsapp' }
 if ($Debug) { $programArgs += '--debug' }
 
 # The program prints its own error messages; don't let PowerShell turn its error output into extra noise.

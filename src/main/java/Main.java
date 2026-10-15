@@ -4,7 +4,6 @@ import utils.FileIOHandler;
 import utils.PdfConverter;
 import utils.ReportFactory;
 import utils.UserFacingException;
-import utils.WhatsAppSender;
 
 import java.io.IOException;
 import java.nio.file.FileSystemException;
@@ -18,14 +17,10 @@ import java.util.Optional;
 
 /**
  * Reads the newest BDI sheet CSV in the input folder, writes the Hebrew BDI update report (.docx) next to it,
- * converts it to PDF with Word, and sends the PDF on WhatsApp.
+ * and converts it to PDF with Word.
  *
- * <p>Usage: {@code java -jar BDIUpdateDocMaker.jar [inputFolder] [--no-whatsapp] [--debug]}
- * (default folder {@value #DEFAULT_INPUT_FOLDER}).
- * <ul>
- *   <li>{@code --no-whatsapp}: write the report and the PDF but don't send anything (for testing)</li>
- *   <li>{@code --debug}: also print every company read, and the stack trace of any error</li>
- * </ul>
+ * <p>Usage: {@code java -jar BDIUpdateDocMaker.jar [inputFolder] [--debug]} (default folder
+ * {@value #DEFAULT_INPUT_FOLDER}). {@code --debug} also prints every company read, and the stack trace of any error.
  *
  * <p>Any problem ends the program with exit code 1 and a message saying what went wrong and how to fix it.
  */
@@ -33,12 +28,6 @@ public class Main {
     // Where the BDI sheet, exported from Excel as "CSV UTF-8", is dropped. The newest .csv there is used.
     private static final String DEFAULT_INPUT_FOLDER = "C:\\bdiupdatedocmaker";
 
-    // WhatsApp settings (they hold the access token, so they are never in version control). Looked up first in
-    // the input folder, so any copy of the program finds them, then in the working directory (the project
-    // folder when run from IntelliJ or run.ps1).
-    private static final String WHATSAPP_SETTINGS = "whatsapp.properties";
-
-    private static final String NO_WHATSAPP_FLAG = "--no-whatsapp";
     private static final String DEBUG_FLAG = "--debug";
 
     public static void main(String[] args) {
@@ -56,20 +45,13 @@ public class Main {
     }
 
     private static void run(String[] args, boolean debug) throws Exception {
-        boolean sendWhatsApp = true;
         List<String> folders = new ArrayList<>();
         for (String arg : args) {
-            switch (arg) {
-                case NO_WHATSAPP_FLAG -> sendWhatsApp = false;
-                case DEBUG_FLAG -> { }
-                default -> {
-                    if (arg.startsWith("-")) {
-                        throw new UserFacingException("Unknown option \"" + arg + "\". Options: "
-                                + NO_WHATSAPP_FLAG + ", " + DEBUG_FLAG + ".");
-                    }
-                    folders.add(arg);
-                }
+            if (arg.equals(DEBUG_FLAG)) continue;
+            if (arg.startsWith("-")) {
+                throw new UserFacingException("Unknown option \"" + arg + "\". Options: " + DEBUG_FLAG + ".");
             }
+            folders.add(arg);
         }
         if (folders.size() > 1) {
             throw new UserFacingException("Expected at most one input folder, got " + folders.size() + ": " + folders
@@ -79,21 +61,6 @@ public class Main {
         if (!Files.isDirectory(inputFolder)) {
             throw new UserFacingException("The input folder " + inputFolder + " does not exist. Create it and save"
                     + " the BDI sheet there (Excel: File > Save As > CSV UTF-8), or pass a different folder.");
-        }
-
-        // Check the WhatsApp settings before doing any work, so a missing or broken file is reported straight away.
-        WhatsAppSender sender = null;
-        if (sendWhatsApp) {
-            Path settings = findWhatsAppSettings(inputFolder).orElseThrow(() -> new UserFacingException(
-                    "No " + WHATSAPP_SETTINGS + " found, so the report cannot be sent on WhatsApp.\n"
-                            + "Looked in:\n  " + inputFolder.resolve(WHATSAPP_SETTINGS) + "\n  "
-                            + Path.of(WHATSAPP_SETTINGS).toAbsolutePath() + "\n"
-                            + "The file holds the access token, so it is not in the repository. Copy"
-                            + " whatsapp.properties.example to " + inputFolder.resolve(WHATSAPP_SETTINGS)
-                            + " and fill it in (see the README).\n"
-                            + "To only make the report without sending it, run with " + NO_WHATSAPP_FLAG + "."));
-            System.out.println("WhatsApp settings: " + settings);
-            sender = WhatsAppSender.fromProperties(settings);
         }
 
         Path inputCsv = findInputCsv(inputFolder);
@@ -126,12 +93,6 @@ public class Main {
             throw new UserFacingException(e.getMessage(), e);
         }
         System.out.println("PDF written to " + pdf);
-
-        if (sender == null) {
-            System.out.println("Not sending on WhatsApp (" + NO_WHATSAPP_FLAG + ")");
-            return;
-        }
-        sender.sendDocument(pdf);
     }
 
     // A score that is filled in but isn't 0-10 is shown as typed, without a color; say so, it is probably a typo.
@@ -146,15 +107,6 @@ public class Main {
                         + " from 0 to 10, so it has no color in the report.");
             }
         }
-    }
-
-    private static Optional<Path> findWhatsAppSettings(Path inputFolder) {
-        for (Path candidate : List.of(inputFolder.resolve(WHATSAPP_SETTINGS), Path.of(WHATSAPP_SETTINGS))) {
-            if (Files.isRegularFile(candidate)) {
-                return Optional.of(candidate.toAbsolutePath());
-            }
-        }
-        return Optional.empty();
     }
 
     private static Path findInputCsv(Path inputFolder) throws UserFacingException, IOException {
